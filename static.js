@@ -9,13 +9,13 @@ router.get("/snarkjs.js", (req, res) => {
 });
 
 router.get("/circuit.wasm", (req, res) => {
-  res.sendFile(path.join(__dirname, "../circuit_js/circuit.wasm"));
+  res.sendFile(path.join(__dirname, "./circuit_js/circuit.wasm"));
 });
 
 router.get("/circuit_final.zkey", (req, res) => {
-  res.sendFile(path.join(__dirname, "../circuit_final.zkey"));
+  res.sendFile(path.join(__dirname, "./circuit_final.zkey"));
 });
 
 router.get("/verification_key.json", (req, res) => {
-  res.sendFile(path.join(__dirname, "../verification_key.json"));
+  res.sendFile(path.join(__dirname, "./verification_key.json"));
 });

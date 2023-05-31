@@ -22,7 +22,7 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
   }));
 
   app.use("/api", require("./api"));
-  app.use("/static", require("./static"));
+  app.use("/static", require("../static"));
 
   app.get("/", ({session}, res) => {
     if (session.username) {
