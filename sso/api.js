@@ -16,7 +16,14 @@ router.get("/catchphrase", async ({session}, res) => {
 
 router.get("/apps", async ({session}, res) => {
   if (session.username) {
-    let [apps] = await pool.query("SELECT uuid, app FROM apps WHERE username = ?", [session.username]);
+    let [apps] = await pool.query(`
+        SELECT uuid, name, ip
+        FROM apps
+        WHERE uuid IN (
+            SELECT uuid
+            FROM credentials
+            WHERE username = ?
+        )`, [session.username]);
     res.send(apps);
   } else {
     res.status(403);
