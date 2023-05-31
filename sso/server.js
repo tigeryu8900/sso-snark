@@ -32,12 +32,12 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
     connection.query('SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE');
   });
 
-  await pool.query(`CREATE TABLE IF NOT EXISTS USERS
+  await pool.query(`CREATE TABLE IF NOT EXISTS users
              (
-                 USERNAME    VARCHAR(32)  PRIMARY KEY NOT NULL,
-                 OUTPUT      VARCHAR(100)             NOT NULL,
-                 NONCE       VARCHAR(100)             NOT NULL,
-                 CATCHPHRASE VARCHAR(100)             NOT NULL
+                 username    VARCHAR(32)  PRIMARY KEY NOT NULL,
+                 output      VARCHAR(100)             NOT NULL,
+                 nonce       VARCHAR(100)             NOT NULL,
+                 catchphrase VARCHAR(100)             NOT NULL
              )`);
 
   const app = express();
@@ -55,8 +55,8 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
 
   app.get("/api/catchphrase", async ({session}, res) => {
     if (session.username) {
-      let [[{CATCHPHRASE}]] = await pool.query("SELECT CATCHPHRASE FROM USERS WHERE USERNAME = ?", [session.username]);
-      res.send(CATCHPHRASE);
+      let [[{catchphrase}]] = await pool.query("SELECT catchphrase FROM users WHERE username = ?", [session.username]);
+      res.send(catchphrase);
     } else {
       res.status(403);
       res.send("Forbidden");
@@ -116,13 +116,13 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
         await connection.rollback();
         return;
       }
-      if ((await connection.query("SELECT 1 from USERS WHERE USERNAME = ?", body.username))[0].length) {
+      if ((await connection.query("SELECT 1 from users WHERE username = ?", body.username))[0].length) {
         console.error("user already exists");
         res.redirect(400, "/register?message=User+already+exists.");
         await connection.rollback();
         return;
       }
-      await connection.query("INSERT INTO USERS (USERNAME, OUTPUT, NONCE, CATCHPHRASE) VALUES (?, ?, ?, ?)",
+      await connection.query("INSERT INTO users (username, output, nonce, catchphrase) VALUES (?, ?, ?, ?)",
           [body.username, body.output, body.nonce, randomWords({min: 5, max: 10, maxLength: 9, join: ' '})]);
       await connection.query(`CREATE TABLE ??
                                   (
@@ -147,12 +147,9 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
   });
 
   app.get("/api/user", async ({query}, res) => {
-    let [result] = await pool.query("SELECT OUTPUT, NONCE FROM USERS WHERE USERNAME = ?", [query.username]);
+    let [result] = await pool.query("SELECT output, nonce FROM users WHERE username = ?", [query.username]);
     if (result.length) {
-      res.send({
-        output: result[0].OUTPUT,
-        nonce: result[0].NONCE
-      });
+      res.send(result[0]);
     } else {
       res.status(404);
       res.send("User not found");
@@ -196,7 +193,7 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
         await connection.rollback();
         return;
       }
-      let [result] = await pool.query("SELECT OUTPUT, NONCE FROM USERS WHERE USERNAME = ?", [body.username]);
+      let [result] = await pool.query("SELECT output, nonce FROM users WHERE username = ?", [body.username]);
       if (!result.length) {
         res.redirect(400, "/signin?message=User+not+found.");
         return;
@@ -205,7 +202,7 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
         res.redirect(400, "/signin?message=Username+or+password+is+incorrect.");
         return;
       }
-      await connection.query("UPDATE USERS SET OUTPUT = ?, NONCE = ? WHERE USERNAME = ?",
+      await connection.query("UPDATE users SET output = ?, nonce = ? WHERE username = ?",
           [body.output, body.nonce, body.username]);
       session.username = body.username;
       console.log("user", body.username, "updated");
