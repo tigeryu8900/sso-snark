@@ -21,22 +21,21 @@ pool.on('connection', function (connection) {
 pool.ready = Promise.all([
     pool.query(`CREATE TABLE IF NOT EXISTS users
               (
-                  username    VARCHAR(32) PRIMARY KEY NOT NULL,
-                  output      VARCHAR(100)            NOT NULL,
-                  nonce       VARCHAR(100)            NOT NULL,
-                  catchphrase VARCHAR(100)            NOT NULL
+                  username    VARCHAR(32)  PRIMARY KEY NOT NULL,
+                  output      VARCHAR(100)             NOT NULL,
+                  nonce       VARCHAR(100)             NOT NULL,
+                  catchphrase VARCHAR(100)             NOT NULL
               )`),
     pool.query(`CREATE TABLE IF NOT EXISTS apps
                 (
                     uuid CHAR(36)     PRIMARY KEY NOT NULL,
-                    name VARCHAR(100)             NOT NULL,
+                    name VARCHAR(32)              NOT NULL,
                     ip   VARCHAR(16)              NOT NULL
                 )`),
     pool.query(`CREATE TABLE IF NOT EXISTS credentials
                 (
                     username VARCHAR(32)  NOT NULL,
                     uuid     CHAR(36)     NOT NULL,
-                    app      VARCHAR(32)  NOT NULL,
                     otp      VARCHAR(100) NOT NULL,
                     PRIMARY KEY (username, uuid)
                 )`)
