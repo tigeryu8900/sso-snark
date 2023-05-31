@@ -1,17 +1,13 @@
 const express = require("express");
 const snarkjs = require("snarkjs");
 const fs = require("fs");
-const randomWords = require('random-words');
 
 const pool = require("./pool");
+const utils = require("./utils");
 
 const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
 
 (async () => {
-  function generateNonce() {
-    return crypto.getRandomValues(new BigUint64Array(1))[0].toString();
-  }
-
   const app = express();
   const port = 3000;
 
@@ -70,15 +66,13 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
         await connection.rollback();
         return;
       }
-      if ((await connection.query("SELECT 1 from users WHERE username = ?", body.username))[0].length) {
+      if (await utils.getUser(body.username, connection)) {
         console.error("user already exists");
         res.redirect(400, "/register?message=User+already+exists.");
         await connection.rollback();
         return;
       }
-      await connection.query("INSERT INTO users (username, output, nonce, catchphrase) VALUES (?, ?, ?, ?)",
-          [body.username, body.output, body.nonce, randomWords({min: 5, max: 10, maxLength: 9, join: ' '})]);
-
+      await utils.addUser(body.username, body.output, body.nonce, connection);
       session.username = body.username;
       console.log("added user", body.username);
       res.redirect("/");
@@ -89,7 +83,7 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
       await connection.rollback();
     } finally {
       // await connection.query("UNLOCK TABLES");
-      session.nonce = generateNonce();
+      session.nonce = utils.generateNonce();
       connection.release();
     }
   });
@@ -131,17 +125,19 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
         await connection.rollback();
         return;
       }
-      let [result] = await pool.query("SELECT output, nonce FROM users WHERE username = ?", [body.username]);
-      if (!result.length) {
+      let user = await utils.getUser(body.username, connection);
+      if (!user) {
         res.redirect(400, "/signin?message=User+not+found.");
         return;
       }
-      if (!await snarkjs.plonk.verify(vKey, [result[0].output, result[0].nonce], JSON.parse(body.proof))) {
+      if (!await snarkjs.plonk.verify(vKey, [
+          user.output,
+          user.nonce
+      ], JSON.parse(body.proof))) {
         res.redirect(400, "/signin?message=Username+or+password+is+incorrect.");
         return;
       }
-      await connection.query("UPDATE users SET output = ?, nonce = ? WHERE username = ?",
-          [body.output, body.nonce, body.username]);
+      await utils.updateUser(body.user, body.output, body.nonce, connection);
       session.username = body.username;
       console.log("user", body.username, "updated");
       res.redirect("/");
@@ -151,7 +147,7 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
       res.redirect(500, "/signin?message=Something+went+wrong.");
       await connection.rollback();
     } finally {
-      session.nonce = generateNonce();
+      session.nonce = utils.generateNonce();
       connection.release();
     }
   });
