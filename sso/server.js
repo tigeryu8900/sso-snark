@@ -157,6 +157,91 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
     res.redirect("/signin");
   });
 
+  app.post("/credentials/add", async ({body, session}, res) => {
+    const connection = await pool.getConnection();
+    try {
+      if (!session.username) {
+        res.status(403);
+        res.send("Forbidden");
+        await connection.rollback();
+        return;
+      }
+      if (!body.uuid) {
+        res.status(400);
+        res.send("Missing uuid");
+        await connection.rollback();
+        return;
+      }
+      if (body.uuid.length !== 36) {
+        res.status(400);
+        res.send("Invalid uuid");
+        await connection.rollback();
+        return;
+      }
+      if (!body.otp) {
+        res.status(400);
+        res.send("Missing otp");
+        await connection.rollback();
+        return;
+      }
+      try {
+        BigInt(body.otp);
+      } catch (e) {
+        res.status(400);
+        res.send("Invalid otp");
+        await connection.rollback();
+        return;
+      }
+      if (body.otp.length > 100) {
+        res.status(400);
+        res.send("otp too big");
+        await connection.rollback();
+        return;
+      }
+      if (await utils.getCredential(session.username, body.uuid, connection)) {
+        res.status(400);
+        res.send("Credential already exists");
+        await connection.rollback();
+        return;
+      }
+      let app = await utils.getApp(body.uuid, connection);
+      if (!app) {
+        if (!body.name) {
+          res.status(400);
+          res.send("Missing name");
+          await connection.rollback();
+          return;
+        }
+        if (body.name.length > 32) {
+          res.status(400);
+          res.send("name too long");
+          await connection.rollback();
+          return;
+        }
+        if (!body.ip) {
+          res.status(400);
+          res.send("Missing ip");
+          await connection.rollback();
+          return;
+        }
+        if (body.ip.length > 16) {
+          res.status(400);
+          res.send("ip too long");
+          await connection.rollback();
+          return;
+        }
+        await utils.addApp(body.uuid, body.name, body.ip, connection);
+        app = body;
+      }
+      await utils.addCredential(session.username, app.uuid, body.otp, connection);
+    } catch (e) {
+      console.error(e);
+      await connection.rollback();
+    } finally {
+      connection.release();
+    }
+  });
+
   await pool.ready;
 
   app.listen(port, () => {
