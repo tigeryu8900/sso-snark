@@ -40,6 +40,15 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
                  catchphrase VARCHAR(100)             NOT NULL
              )`);
 
+  await pool.query(`CREATE TABLE IF NOT EXISTS apps
+             (
+                 username    VARCHAR(32)              NOT NULL,
+                 uuid        CHAR(36)                 NOT NULL,
+                 app         VARCHAR(32)              NOT NULL,
+                 otp         VARCHAR(100)             NOT NULL,
+                 PRIMARY KEY (username, uuid)
+             )`);
+
   const app = express();
   const port = 3000;
 
@@ -62,6 +71,16 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
       res.send("Forbidden");
     }
   });
+
+  app.get("/api/apps", async ({session}, res) => {
+    if (session.username) {
+      let [apps] = await pool.query("SELECT uuid, app FROM apps WHERE username = ?", [session.username]);
+      res.send(apps);
+    } else {
+      res.status(403);
+      res.send("Forbidden");
+    }
+  })
 
   app.get("/", ({session}, res) => {
     if (session.username) {
@@ -89,12 +108,6 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
       await connection.beginTransaction();
       console.log("begin transaction");
       // await connection.query("LOCK TABLES `USERS` WRITE");
-      if (body.username === "users") {
-        console.error("'users' is reserved.");
-        res.redirect(400, "/register?message='users'+is+reserved.");
-        await connection.rollback();
-        return;
-      }
       try {
         BigInt(body.output);
         BigInt(body.nonce);
@@ -124,13 +137,7 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
       }
       await connection.query("INSERT INTO users (username, output, nonce, catchphrase) VALUES (?, ?, ?, ?)",
           [body.username, body.output, body.nonce, randomWords({min: 5, max: 10, maxLength: 9, join: ' '})]);
-      await connection.query(`CREATE TABLE ??
-                                  (
-                                      UUID     VARCHAR(36)  PRIMARY KEY NOT NULL,
-                                      APP      VARCHAR(32)              NOT NULL,
-                                      OUTPUT   VARCHAR(100)             NOT NULL,
-                                      NONCE    VARCHAR(100)             NOT NULL
-                                  );`, [body.username]);
+
       session.username = body.username;
       console.log("added user", body.username);
       res.redirect("/");
