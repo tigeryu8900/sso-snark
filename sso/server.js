@@ -1,53 +1,16 @@
 const express = require("express");
-const path = require("path");
-const mysql = require("mysql2");
 const snarkjs = require("snarkjs");
 const fs = require("fs");
 const randomWords = require('random-words');
 
-require("dotenv").config();
+const pool = require("./pool");
 
 const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
 
 (async () => {
-  const snarkjspath = path.join(path.dirname(require.resolve('snarkjs')), "snarkjs.js");
-
   function generateNonce() {
     return crypto.getRandomValues(new BigUint64Array(1))[0].toString();
   }
-
-  const pool = mysql.createPool({
-    host: process.env.MYSQL_HOST,
-    user: process.env.MYSQL_USERNAME,
-    password: process.env.MYSQL_PASSWORD || undefined,
-    database: "sso",
-    waitForConnections: true,
-    connectionLimit: 10,
-    maxIdle: 10,
-    idleTimeout: 60000,
-    queueLimit: 0
-  }).promise();
-
-  pool.on('connection', function (connection) {
-    connection.query('SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE');
-  });
-
-  await pool.query(`CREATE TABLE IF NOT EXISTS users
-             (
-                 username    VARCHAR(32)  PRIMARY KEY NOT NULL,
-                 output      VARCHAR(100)             NOT NULL,
-                 nonce       VARCHAR(100)             NOT NULL,
-                 catchphrase VARCHAR(100)             NOT NULL
-             )`);
-
-  await pool.query(`CREATE TABLE IF NOT EXISTS apps
-             (
-                 username    VARCHAR(32)              NOT NULL,
-                 uuid        CHAR(36)                 NOT NULL,
-                 app         VARCHAR(32)              NOT NULL,
-                 otp         VARCHAR(100)             NOT NULL,
-                 PRIMARY KEY (username, uuid)
-             )`);
 
   const app = express();
   const port = 3000;
@@ -62,25 +25,8 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
     resave: false
   }));
 
-  app.get("/api/catchphrase", async ({session}, res) => {
-    if (session.username) {
-      let [[{catchphrase}]] = await pool.query("SELECT catchphrase FROM users WHERE username = ?", [session.username]);
-      res.send(catchphrase);
-    } else {
-      res.status(403);
-      res.send("Forbidden");
-    }
-  });
-
-  app.get("/api/apps", async ({session}, res) => {
-    if (session.username) {
-      let [apps] = await pool.query("SELECT uuid, app FROM apps WHERE username = ?", [session.username]);
-      res.send(apps);
-    } else {
-      res.status(403);
-      res.send("Forbidden");
-    }
-  })
+  app.use("/api", require("./api"));
+  app.use("/static", require("./static"));
 
   app.get("/", ({session}, res) => {
     if (session.username) {
@@ -88,11 +34,6 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
     } else {
       res.redirect("/signin");
     }
-  });
-
-  app.get("/api/nonce", ({session}, res) => {
-    session.nonce = generateNonce();
-    res.send(session.nonce);
   });
 
   app.get("/register", ({session, query}, res) => {
@@ -153,16 +94,6 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
     }
   });
 
-  app.get("/api/user", async ({query}, res) => {
-    let [result] = await pool.query("SELECT output, nonce FROM users WHERE username = ?", [query.username]);
-    if (result.length) {
-      res.send(result[0]);
-    } else {
-      res.status(404);
-      res.send("User not found");
-    }
-  });
-
   app.get("/signin", ({session, query}, res) => {
     res.sendFile("signin.html", {root: __dirname});
   });
@@ -205,7 +136,7 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
         res.redirect(400, "/signin?message=User+not+found.");
         return;
       }
-      if (!await snarkjs.plonk.verify(vKey, [result[0].OUTPUT, result[0].NONCE], JSON.parse(body.proof))) {
+      if (!await snarkjs.plonk.verify(vKey, [result[0].output, result[0].nonce], JSON.parse(body.proof))) {
         res.redirect(400, "/signin?message=Username+or+password+is+incorrect.");
         return;
       }
@@ -230,21 +161,7 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
     res.redirect("/signin");
   });
 
-  app.get("/static/snarkjs.js", (req, res) => {
-    res.sendFile(snarkjspath);
-  });
-
-  app.get("/static/circuit.wasm", (req, res) => {
-    res.sendFile(path.join(__dirname, "../circuit_js/circuit.wasm"));
-  });
-
-  app.get("/static/circuit_final.zkey", (req, res) => {
-    res.sendFile(path.join(__dirname, "../circuit_final.zkey"));
-  });
-
-  app.get("/static/verification_key.json", (req, res) => {
-    res.sendFile(path.join(__dirname, "../verification_key.json"));
-  });
+  await pool.ready;
 
   app.listen(port, () => {
     console.log(`SSO server listening on port ${port}`);
