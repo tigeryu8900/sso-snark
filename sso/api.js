@@ -34,11 +34,26 @@ router.get("/user", async ({query}, res) => {
     res.send("Missing username");
     return;
   }
-  let user = utils.getUser(query.username);
+  let user = await utils.getUser(query.username);
   if (!user) {
     res.status(404);
     res.send("User not found");
     return;
   }
   res.send(user);
+});
+
+router.get("/app", async ({query}, res) => {
+  if (!query.uuid) {
+    res.status(400);
+    res.send("Missing uuid");
+    return;
+  }
+  let app = utils.getApp(query.uuid);
+  if (!app) {
+    res.status(404);
+    res.send("App not found");
+    return;
+  }
+  res.send(app);
 });

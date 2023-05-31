@@ -157,6 +157,15 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
     res.redirect("/signin");
   });
 
+  app.get("/credentials/add", ({session}, res) => {
+    if (!session.username) {
+      res.status(403);
+      res.send("Forbidden");
+      return;
+    }
+    res.sendFile("credentials-add.html", {root: __dirname});
+  });
+
   app.post("/credentials/add", async ({body, session}, res) => {
     const connection = await pool.getConnection();
     try {

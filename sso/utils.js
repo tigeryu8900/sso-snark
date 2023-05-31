@@ -74,5 +74,6 @@ module.exports = {
         SELECT otp
         FROM credentials
         WHERE (username, uuid) = (?, ?)`, [username, uuid]);
+    return credential;
   }
 };
