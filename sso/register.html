@@ -48,7 +48,7 @@
     </div>
 
     <div class="form-outline d-grid mb-3">
-      <button type="submit" class="btn btn-primary">Register</button>
+      <button id="btn" type="submit" class="btn btn-primary" disabled>Register</button>
     </div>
 
     <input id="output" type="hidden" name="output" value="" />
@@ -78,24 +78,35 @@
     $('form').on('submit', async function(e) {
       e.preventDefault();
       message.text("");
-      const nonce = await (await fetch("/api/nonce")).text();
-      $('#nonce').val(nonce);
-      let userlen = username.val().length;
-      let p1 = password1.val();
-      let p2 = password2.val();
-      if (userlen < 3 || userlen > 32) {
-        message.text("Username must be between 3 and 32 characters.");
-      } else if (p1.length < 8) {
-        message.text("Password must be at least 8 characters.");
-      } else if (p1 !== p2) {
-        message.text("Passwords don't match.");
-      } else {
+      $("#btn").prop("disabled", true);
+      try {
+        const nonce = await (await fetch("/api/nonce")).text();
+        $('#nonce').val(nonce);
+        let userlen = username.val().length;
+        let p1 = password1.val();
+        let p2 = password2.val();
+        if (userlen < 3 || userlen > 32) {
+          message.text("Username must be between 3 and 32 characters.");
+          return;
+        }
+        if (p1.length < 8) {
+          message.text("Password must be at least 8 characters.");
+          return;
+        }
+        if (p1 !== p2) {
+          message.text("Passwords don't match.");
+          return;
+        }
         let password = encode(p1);
-        let [output] = (await snarkjs.plonk.fullProve({password, nonce}, "static/circuit.wasm", "static/circuit_final.zkey")).publicSignals;
+        let [output] = (await snarkjs.plonk.fullProve({password, nonce}, "static/circuit.wasm",
+            "static/circuit_final.zkey")).publicSignals;
         $('#output').val(output);
-        this.submit();
+      } finally {
+        $("#btn").prop("disabled", false);
       }
+      this.submit();
     });
+    $("#btn").prop("disabled", false);
   });
 </script>
 

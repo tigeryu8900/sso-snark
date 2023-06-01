@@ -45,7 +45,7 @@
     <div id="message" class="form-outline d-grid mb-3" style="color: red;"></div>
 
     <div class="form-outline d-grid mb-3">
-      <button type="submit" class="btn btn-primary">Change Password</button>
+      <button id="btn" type="submit" class="btn btn-primary">Change Password</button>
     </div>
 
     <input id="username" type="hidden" name="username" value="" />
@@ -74,45 +74,57 @@
     $('form').on('submit', async function(e) {
       e.preventDefault();
       message.text("");
-      const nonce = await (await fetch("/api/nonce")).text();
-      $('#nonce').val(nonce);
-      if (!p0.val().length) {
-        message.text("Please enter your old password.");
+      $("#btn").prop("disabled", false);
+      try {
+        const nonce = await (await fetch("/api/nonce")).text();
+        $('#nonce').val(nonce);
+        if (!p0.val().length) {
+          message.text("Please enter your old password.");
+          return;
+        }
+        if (p1.val().length < 8) {
+          message.text("New password must be at least 8 characters.");
+          return;
+        }
+        if (p1.val() !== p2.val()) {
+          message.text("New passwords don't match.");
+          return;
+        }
+        let password = encode(p1.val());
+        await Promise.all([
+          new Promise(async (resolve, reject) => {
+            let response = await fetch(`/api/user?username=${encodeURIComponent(username)}`);
+            if (!response.ok) {
+              reject(await response.text());
+              return;
+            }
+            let json = JSON.parse(await response.text());
+            let {proof} = await snarkjs.plonk.fullProve(
+                {password: encode(p0.val()), nonce: json.nonce}, "static/circuit.wasm",
+                "static/circuit_final.zkey");
+            if (await snarkjs.plonk.verify(vKey, [json.output, json.nonce], proof)) {
+              resolve(JSON.stringify(proof));
+            } else {
+              reject("Old password is incorrect.");
+            }
+          }),
+          new Promise(async resolve => {
+            resolve((await snarkjs.plonk.fullProve({password, nonce}, "static/circuit.wasm",
+                "static/circuit_final.zkey")).publicSignals)
+          })
+        ]).then(([proof, [output]]) => {
+          $('#proof').val(proof);
+          $('#output').val(output);
+        });
+      } catch (e) {
+        message.text(e);
         return;
+      } finally {
+        $("#btn").prop("disabled", false);
       }
-      if (p1.val().length < 8) {
-        message.text("New password must be at least 8 characters.");
-        return;
-      }
-      if (p1.val() !== p2.val()) {
-        message.text("New passwords don't match.");
-        return;
-      }
-      let password = encode(p1.val());
-      await Promise.all([
-        new Promise(async (resolve, reject) => {
-          let response = await fetch(`/api/user?username=${encodeURIComponent(username)}`);
-          if (!response.ok) {
-            reject(await response.text());
-            return;
-          }
-          let json = JSON.parse(await response.text());
-          let {proof} = await snarkjs.plonk.fullProve({password: encode(p0.val()), nonce: json.nonce}, "static/circuit.wasm", "static/circuit_final.zkey");
-          if (await snarkjs.plonk.verify(vKey, [json.output, json.nonce], proof)) {
-            resolve(JSON.stringify(proof));
-          } else {
-            reject("Old password is incorrect.");
-          }
-        }),
-        new Promise(async resolve => {
-          resolve((await snarkjs.plonk.fullProve({password, nonce}, "static/circuit.wasm", "static/circuit_final.zkey")).publicSignals)
-        })
-      ]).then(([proof, [output]]) => {
-        $('#proof').val(proof);
-        $('#output').val(output);
-        this.submit();
-      }).catch(e => message.val(e));
+      this.submit();
     });
+    $("#btn").prop("disabled", false);
   });
 </script>
 

@@ -118,8 +118,11 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
   });
 
   app.get("/signin", ({session, query}, res) => {
-    res.sendFile("signin.html", {root: __dirname});
-  });
+    if (session.username) {
+      res.redirect("/");
+    } else {
+      res.sendFile("signin.html", {root: __dirname});
+    }  });
 
   app.get("/update", ({session, query}, res) => {
     if (session.username) {

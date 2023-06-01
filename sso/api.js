@@ -11,7 +11,7 @@ router.get("/catchphrase", async ({session}, res) => {
     res.send("Forbidden");
     return;
   }
-  res.send(utils.getCatchphrase(session.username));
+  res.send(await utils.getCatchphrase(session.username));
 });
 
 router.get("/apps", async ({session}, res) => {
@@ -20,7 +20,7 @@ router.get("/apps", async ({session}, res) => {
     res.send("Forbidden");
     return;
   }
-  res.send(utils.getApps(session.username));
+  res.send(await utils.getApps(session.username));
 });
 
 router.get("/nonce", ({session}, res) => {

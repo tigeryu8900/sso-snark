@@ -43,7 +43,7 @@
     </div>
 
     <div class="form-outline d-grid mb-3">
-      <button type="submit" class="btn btn-primary">Sign In</button>
+      <button id="btn" type="submit" class="btn btn-primary">Sign In</button>
     </div>
 
     <input id="proof" type="hidden" name="proof" value="" />
@@ -74,18 +74,20 @@
     $('form').on('submit', async function(e) {
       e.preventDefault();
       message.text("");
-      const nonce = await (await fetch("/api/nonce")).text();
-      $('#nonce').val(nonce);
-      if (!username.val().length) {
-        message.text("Please enter your username.");
-        return;
-      }
-      if (!passwordElement.val().length) {
-        message.text("Please enter your password.");
-        return;
-      }
-      let password = encode(passwordElement.val());
-      await Promise.all([
+      $("#btn").prop("disabled", false);
+      try {
+        const nonce = await (await fetch("/api/nonce")).text();
+        $('#nonce').val(nonce);
+        if (!username.val().length) {
+          message.text("Please enter your username.");
+          return;
+        }
+        if (!passwordElement.val().length) {
+          message.text("Please enter your password.");
+          return;
+        }
+        let password = encode(passwordElement.val());
+        await Promise.all([
           new Promise(async (resolve, reject) => {
             let response = await fetch(`/api/user?username=${encodeURIComponent(username.val())}`);
             if (!response.ok) {
@@ -93,7 +95,8 @@
               return;
             }
             let json = JSON.parse(await response.text());
-            let {proof} = await snarkjs.plonk.fullProve({password, nonce: json.nonce}, "static/circuit.wasm", "static/circuit_final.zkey");
+            let {proof} = await snarkjs.plonk.fullProve({password, nonce: json.nonce},
+                "static/circuit.wasm", "static/circuit_final.zkey");
             if (await snarkjs.plonk.verify(vKey, [json.output, json.nonce], proof)) {
               resolve(JSON.stringify(proof));
             } else {
@@ -101,14 +104,22 @@
             }
           }),
           new Promise(async resolve => {
-            resolve((await snarkjs.plonk.fullProve({password, nonce}, "static/circuit.wasm", "static/circuit_final.zkey")).publicSignals)
+            resolve((await snarkjs.plonk.fullProve({password, nonce}, "static/circuit.wasm",
+                "static/circuit_final.zkey")).publicSignals)
           })
-      ]).then(([proof, [output]]) => {
-        $('#proof').val(proof);
-        $('#output').val(output);
-        this.submit();
-      }).catch(e => message.val(e));
+        ]).then(([proof, [output]]) => {
+          $('#proof').val(proof);
+          $('#output').val(output);
+        });
+      } catch (e) {
+        message.text(e);
+        return;
+      } finally {
+        $("#btn").prop("disabled", false);
+      }
+      this.submit();
     });
+    $("#btn").prop("disabled", false);
   });
 </script>
 

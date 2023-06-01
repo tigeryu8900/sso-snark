@@ -40,8 +40,11 @@ require("dotenv").config();
   });
 
   app.get("/signin", ({session}, res) => {
-    res.sendFile("signin.html", {root: __dirname});
-  });
+    if (session.username) {
+      res.redirect("/");
+    } else {
+      res.sendFile("signin.html", {root: __dirname});
+    }  });
 
   app.get("/signout", ({session}, res) => {
     session.destroy();

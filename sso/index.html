@@ -33,7 +33,7 @@
         <thead>
         <tr>
           <th scope="col">App</th>
-          <th scope="col">UUID</th>
+          <th scope="col">URL</th>
           <th scope="col">Sign In</th>
         </tr>
         </thead>
@@ -60,10 +60,10 @@
             //     </tr>
             // `)))()
             .forEach(({name, url}) => tbody.append($('<tr></tr>').append(
-                $('<th scope="row"></th>').val(name),
-                $('<td></td>').val(name),
+                $('<th scope="row"></th>').text(name),
+                $('<td></td>').text(url),
                 $('<td></td>').append($('<a class="btn btn-primary" role="button">Sign In</a>')
-                    .href(`/credentials/auth?name=${encodeURIComponent(name)}&url=${encodeURIComponent(url)}`)
+                    .attr("href", `/credentials/auth?name=${encodeURIComponent(name)}&url=${encodeURIComponent(url)}`)
                 ),
             )))
         )()
