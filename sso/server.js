@@ -26,7 +26,7 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
 
   app.get("/", ({session}, res) => {
     if (session.username) {
-      res.sendFile("index.html", { root: __dirname });
+      res.sendFile("index.html", {root: __dirname});
     } else {
       res.redirect("/signin");
     }
@@ -227,19 +227,19 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
           await connection.rollback();
           return;
         }
-        if (!body.ip) {
+        if (!body.url) {
           res.status(400);
-          res.send("Missing ip");
+          res.send("Missing url");
           await connection.rollback();
           return;
         }
-        if (body.ip.length > 16) {
+        if (body.url.length > 256) {
           res.status(400);
-          res.send("ip too long");
+          res.send("url too long");
           await connection.rollback();
           return;
         }
-        await utils.addApp(body.uuid, body.name, body.ip, connection);
+        await utils.addApp(body.uuid, body.name, body.url, connection);
         app = body;
       }
       await utils.addCredential(session.username, app.uuid, body.otp, connection);

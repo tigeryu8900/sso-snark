@@ -41,7 +41,7 @@ module.exports = {
   },
   async getApps(username, connection = pool) {
     let [apps] = await connection.query(`
-        SELECT uuid, name, ip
+        SELECT uuid, name, address
         FROM apps
         WHERE uuid IN (
             SELECT uuid
@@ -50,15 +50,15 @@ module.exports = {
         )`, [username]);
     return apps;
   },
-  async addApp(uuid, name, ip, connection = pool) {
+  async addApp(uuid, name, address, connection = pool) {
     await connection.query(`
         INSERT INTO apps
-        (uuid, name, ip)
+        (uuid, name, address)
         VALUES (?, ?, ?)`, [uuid, name, ip]);
   },
   async getApp(uuid, connection = pool) {
     let [[app]] = await connection.query(`
-        SELECT uuid, name, ip
+        SELECT uuid, name, address
         FROM apps
         WHERE uuid = ?`, [uuid]);
     return app;
