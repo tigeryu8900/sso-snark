@@ -44,12 +44,12 @@ router.get("/user", async ({query}, res) => {
 });
 
 router.get("/app", async ({query}, res) => {
-  if (!query.uuid) {
+  if (!query.url) {
     res.status(400);
-    res.send("Missing uuid");
+    res.send("Missing url");
     return;
   }
-  let app = utils.getApp(query.uuid);
+  let app = utils.getApp(query.url);
   if (!app) {
     res.status(404);
     res.send("App not found");

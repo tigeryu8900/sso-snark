@@ -1,22 +1,14 @@
 const express = require("express");
 const path = require("path");
-const snarkjs = require("snarkjs");
 const fs = require("fs");
-const randomWords = require('random-words');
+
+const pool = require("./pool");
 
 require("dotenv").config();
 
-const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
-
 (async () => {
-  const snarkjspath = path.join(path.dirname(require.resolve('snarkjs')), "snarkjs.js");
-
-  function generateNonce() {
-    return crypto.getRandomValues(new BigUint64Array(1))[0].toString();
-  }
-
   const app = express();
-  const port = 3000;
+  const port = 8080;
 
   app.use(express.json());
   app.use(express.urlencoded({extended: true}));
@@ -28,23 +20,35 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
     resave: false
   }));
 
+  app.use("/static", require("../static"));
+  app.use("/api", require("./api"));
 
-
-  app.get("/static/snarkjs.js", (req, res) => {
-    res.sendFile(snarkjspath);
+  app.get("/", ({session}, res) => {
+    if (session.username) {
+      res.sendFile("index.html", {root: __dirname});
+    } else {
+      res.redirect("/signin");
+    }
   });
 
-  app.get("/static/circuit.wasm", (req, res) => {
-    res.sendFile(path.join(__dirname, "../circuit_js/circuit.wasm"));
+  app.get("/register", ({session}, res) => {
+    if (session.username) {
+      res.redirect("/");
+    } else {
+      res.sendFile("register.html", {root: __dirname});
+    }
   });
 
-  app.get("/static/circuit_final.zkey", (req, res) => {
-    res.sendFile(path.join(__dirname, "../circuit_final.zkey"));
+  app.get("/signin", ({session}, res) => {
+    res.sendFile("signin.html", {root: __dirname});
   });
 
-  app.get("/static/verification_key.json", (req, res) => {
-    res.sendFile(path.join(__dirname, "../verification_key.json"));
+  app.get("/signout", ({session}, res) => {
+    session.destroy();
+    res.redirect("/signin");
   });
+
+  await pool.ready;
 
   app.listen(port, () => {
     console.log(`App server listening on port ${port}`);

@@ -28,6 +28,7 @@ select 1 from users where USERNAME = 'user2';]]></console>
     <filter-actions connection-id="c1c74f61-cfe1-41d8-af35-90b8bc27bba3" dataset="mysql.columns_priv" active-filter-id="" />
     <filter-actions connection-id="c1c74f61-cfe1-41d8-af35-90b8bc27bba3" dataset="mysql.db" active-filter-id="" />
     <filter-actions connection-id="c1c74f61-cfe1-41d8-af35-90b8bc27bba3" dataset="sso.users" active-filter-id="EMPTY_FILTER" />
+    <filter-actions connection-id="c1c74f61-cfe1-41d8-af35-90b8bc27bba3" dataset="sso.user1" active-filter-id="" />
   </component>
   <component name="DBNavigator.Project.ExecutionManager">
     <retain-sticky-names value="false" />

@@ -6,7 +6,7 @@ const pool = module.exports = mysql.createPool({
   host: process.env.MYSQL_HOST,
   user: process.env.MYSQL_USERNAME,
   password: process.env.MYSQL_PASSWORD || undefined,
-  database: "sso",
+  database: "app",
   waitForConnections: true,
   connectionLimit: 10,
   maxIdle: 10,
@@ -21,21 +21,10 @@ pool.on('connection', function (connection) {
 pool.ready = Promise.all([
     pool.query(`CREATE TABLE IF NOT EXISTS users
                 (
-                    username    VARCHAR(32)  PRIMARY KEY NOT NULL,
-                    output      VARCHAR(100)             NOT NULL,
-                    nonce       VARCHAR(100)             NOT NULL,
-                    catchphrase VARCHAR(100)             NOT NULL
-                )`),
-    pool.query(`CREATE TABLE IF NOT EXISTS apps
-                (
-                    url  VARCHAR(512) PRIMARY KEY NOT NULL,
-                    name VARCHAR(32)              NOT NULL
-                )`),
-    pool.query(`CREATE TABLE IF NOT EXISTS credentials
-                (
                     username VARCHAR(32)  NOT NULL,
                     url      VARCHAR(512) NOT NULL,
-                    otp      VARCHAR(100) NOT NULL,
+                    output   VARCHAR(100) NOT NULL,
+                    nonce    VARCHAR(100) NOT NULL,
                     PRIMARY KEY (username, url)
                 )`)
 ]);

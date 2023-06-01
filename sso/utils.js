@@ -1,8 +1,13 @@
 const randomWords = require("random-words");
+const snarkjs = require("snarkjs");
+// const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 const pool = require("./pool");
 
+require("dotenv").config();
+
 module.exports = {
+  urlPattern: /^https?:\/\/(?:(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]|localhost)\b(?:[-a-zA-Z0-9()@:%_\+.~&\/=]*[-a-zA-Z0-9()@:%_\+.~&=])?$/,
   randomBigUint64() {
     return crypto.getRandomValues(new BigUint64Array(1))[0].toString();
   },
@@ -41,39 +46,64 @@ module.exports = {
   },
   async getApps(username, connection = pool) {
     let [apps] = await connection.query(`
-        SELECT uuid, name, address
+        SELECT url, name
         FROM apps
-        WHERE uuid IN (
-            SELECT uuid
+        WHERE url IN (
+            SELECT url
             FROM credentials
             WHERE username = ?
         )`, [username]);
     return apps;
   },
-  async addApp(uuid, name, address, connection = pool) {
+  async addApp(url, name, connection = pool) {
     await connection.query(`
         INSERT INTO apps
-        (uuid, name, address)
-        VALUES (?, ?, ?)`, [uuid, name, ip]);
+        (url, name)
+        VALUES (?, ?)`, [url, name]);
   },
-  async getApp(uuid, connection = pool) {
+  async getApp(url, connection = pool) {
     let [[app]] = await connection.query(`
-        SELECT uuid, name, address
+        SELECT name
         FROM apps
-        WHERE uuid = ?`, [uuid]);
+        WHERE url = ?`, [url]);
     return app;
   },
-  async addCredential(username, uuid, otp, connection = pool) {
+  async addCredential(username, url, otp, connection = pool) {
     await connection.query(`
         INSERT INTO credentials
-        (username, uuid, otp)
-        VALUES (?, ?, ?)`, [username, uuid, otp]);
+        (username, url, otp)
+        VALUES (?, ?, ?)`, [username, url, otp]);
   },
-  async getCredential(username, uuid, connection = pool) {
-    let [[credential]] = connection.query(`
+  async getCredential(username, url, connection = pool) {
+    let [[credential]] = await connection.query(`
         SELECT otp
         FROM credentials
-        WHERE (username, uuid) = (?, ?)`, [username, uuid]);
+        WHERE (username, url) = (?, ?)`, [username, url]);
     return credential;
+  },
+  async updateCredential(username, url, otp, connection = pool) {
+    await connection.query(`
+        UPDATE credentials
+        SET otp = ?
+        WHERE (username, url) = (?, ?)`, [otp, username, url]);
+  },
+  async registerRemoteUser(username, url, otp, nonce) {
+    const [output] = (await snarkjs.plonk.fullProve({
+      password: otp,
+      nonce
+    }, "../circuit_js/circuit.wasm", "../circuit_final.zkey")).publicSignals;
+    const response = await fetch(url + "/api/register", {
+      method: "post",
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        username,
+        url: process.env.SSO_URL,
+        output,
+        nonce
+      }).toString()
+    });
+    return response.ok;
   }
 };
