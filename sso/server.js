@@ -10,7 +10,6 @@ const utils = require("./utils");
 
   app.use(express.json());
   app.use(express.urlencoded({extended: true}));
-  app.use(require("cookie-parser")());
   app.use(require("express-session")({
     secret: "tigerthegreat",
     saveUninitialized: false,
