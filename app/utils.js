@@ -1,8 +1,12 @@
+const path = require("path");
+
 const pool = require("./pool");
+const fs = require("fs");
 
 require("dotenv").config();
 
 module.exports = {
+  vKey: JSON.parse(fs.readFileSync(path.join(__dirname, "../verification_key.json")).toString()),
   randomBigUint64() {
     return crypto.getRandomValues(new BigUint64Array(1))[0].toString();
   },

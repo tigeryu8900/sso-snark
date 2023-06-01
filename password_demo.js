@@ -1,7 +1,8 @@
 const snarkjs = require("snarkjs");
 const fs = require("fs");
+const path = require("path");
 
-const vKey = JSON.parse(fs.readFileSync("verification_key.json").toString());
+const vKey = JSON.parse(fs.readFileSync(path.join(__dirname, "verification_key.json")).toString());
 
 class App {
   #users;

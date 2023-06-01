@@ -1,11 +1,13 @@
 const express = require("express");
+const fs = require("fs");
+const snarkjs = require("snarkjs");
+const path = require("path");
 
 const pool = require("./pool");
 const utils = require("./utils");
-const fs = require("fs");
-const snarkjs = require("snarkjs");
 
-const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
+
+const vKey = JSON.parse(fs.readFileSync(path.join(__dirname, "../verification_key.json")).toString());
 
 const router = module.exports = express.Router();
 router.get("/user", async ({query}, res) => {

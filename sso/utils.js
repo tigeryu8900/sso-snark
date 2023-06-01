@@ -1,12 +1,16 @@
 const randomWords = require("random-words");
+const path = require("path");
+const fs = require("fs");
 const snarkjs = require("snarkjs");
-// const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 const pool = require("./pool");
 
 require("dotenv").config();
 
 module.exports = {
+  vKey: JSON.parse(fs.readFileSync(path.join(__dirname, "../verification_key.json")).toString()),
+  wasmFile: path.join(__dirname, "../circuit_js/circuit.wasm"),
+  zKeyFileName: path.join(__dirname, "../circuit_final.zkey"),
   urlPattern: /^https?:\/\/(?:(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]|localhost)\b(?:[-a-zA-Z0-9()@:%_\+.~&\/=]*[-a-zA-Z0-9()@:%_\+.~&=])?$/,
   randomBigUint64() {
     return crypto.getRandomValues(new BigUint64Array(1))[0].toString();
@@ -91,7 +95,7 @@ module.exports = {
     const [output] = (await snarkjs.plonk.fullProve({
       password: otp,
       nonce
-    }, "../circuit_js/circuit.wasm", "../circuit_final.zkey")).publicSignals;
+    }, this.wasmFile, this.zKeyFileName)).publicSignals;
     const response = await fetch(url + "/api/register", {
       method: "post",
       headers: {

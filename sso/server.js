@@ -1,11 +1,8 @@
 const express = require("express");
 const snarkjs = require("snarkjs");
-const fs = require("fs");
 
 const pool = require("./pool");
 const utils = require("./utils");
-
-const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
 
 (async () => {
   const app = express();
@@ -193,7 +190,7 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
         await connection.rollback();
         return;
       }
-      if (!await snarkjs.plonk.verify(vKey, [
+      if (!await snarkjs.plonk.verify(utils.vKey, [
           user.output,
           user.nonce
       ], JSON.parse(body.proof))) {
@@ -405,13 +402,13 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
           username: session.username,
           url: process.env.SSO_URL
         }))).text()).nonce
-      }, "../circuit_js/circuit.wasm", "../circuit_final.zkey");
+      }, utils.wasmFile, utils.zKeyFileName);
       let otp = utils.randomBigUint64();
       let nonce = utils.randomBigUint64();
       let {proof: newProof, publicSignals} = await snarkjs.plonk.fullProve({
         password: otp,
         nonce
-      }, "../circuit_js/circuit.wasm", "../circuit_final.zkey");
+      }, utils.wasmFile, utils.zKeyFileName);
       // let response = await fetch(body.url + "/api/auth", {
       //   method: "post",
       //   headers: {
@@ -442,7 +439,7 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
       let {publicSignals: newPublicSignals} = await snarkjs.plonk.fullProve({
         password: otp,
         nonce: utils.randomBigUint64()
-      }, "../circuit_js/circuit.wasm", "../circuit_final.zkey");
+      }, utils.wasmFile, utils.zKeyFileName);
       res.redirect(body.url + "/api/auth?" + new URLSearchParams({
         username: session.username,
         url: process.env.SSO_URL,
