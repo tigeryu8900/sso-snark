@@ -65,6 +65,11 @@
     if (params.has("message")) {
       message.text(params.get("message"));
     }
+    if (params.has("redirect")) {
+      const redirect = params.get("redirect");
+      $('a[href="/register"]').attr("href", `/register?redirect=${encodeURIComponent(redirect)}`);
+      $('#redirect').prop("disabled", false).val(redirect);
+    }
     $('form').on('submit', async function(e) {
       e.preventDefault();
       message.text("");

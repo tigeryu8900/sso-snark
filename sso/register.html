@@ -53,6 +53,7 @@
 
     <input id="output" type="hidden" name="output" value="" />
     <input id="nonce" type="hidden" name="nonce" value="" />
+    <input id="redirect" type="hidden" name="redirect" value="" disabled/>
   </form>
 </div>
 
@@ -68,6 +69,11 @@
     const password2 = $('#password2');
     if (params.has("message")) {
       message.text(params.get("message"));
+    }
+    if (params.has("redirect")) {
+      const redirect = params.get("redirect");
+      $('a[href="/signin"]').attr("href", `/signin?redirect=${encodeURIComponent(redirect)}`);
+      $('#redirect').prop("disabled", false).val(redirect);
     }
     $('form').on('submit', async function(e) {
       e.preventDefault();
