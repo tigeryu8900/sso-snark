@@ -233,7 +233,7 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
           await connection.rollback();
           return;
         }
-        if (body.url.length > 256) {
+        if (body.url.length > 2048) {
           res.status(400);
           res.send("url too long");
           await connection.rollback();

@@ -28,9 +28,9 @@ pool.ready = Promise.all([
                 )`),
     pool.query(`CREATE TABLE IF NOT EXISTS apps
                 (
-                    uuid CHAR(36)     PRIMARY KEY NOT NULL,
-                    name VARCHAR(32)              NOT NULL,
-                    url  VARCHAR(256)             NOT NULL
+                    uuid CHAR(36)      PRIMARY KEY NOT NULL,
+                    name VARCHAR(32)               NOT NULL,
+                    url  VARCHAR(2048)             NOT NULL
                 )`),
     pool.query(`CREATE TABLE IF NOT EXISTS credentials
                 (
