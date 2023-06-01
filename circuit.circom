@@ -1,18 +1,17 @@
 pragma circom 2.0.0;
 
-template Multiplier(n) {
+include "./node_modules/circomlib/circuits/poseidon.circom";
+
+template Hasher(nbits) {
     signal input password;
     signal input nonce;
     signal output hash;
 
-    signal int[n];
+    component poseidon = Poseidon(2);
 
-    int[0] <== password * password + nonce;
-    for (var i = 1; i < n; i++) {
-        int[i] <== int[i - 1] * int[i - 1] + nonce;
-    }
-
-    hash <== int[n - 1];
+    poseidon.inputs[0] <== password;
+    poseidon.inputs[1] <== nonce;
+    hash <== poseidon.out;
 }
 
-component main {public [nonce]} = Multiplier(1000);
+component main {public [nonce]} = Hasher(32);
