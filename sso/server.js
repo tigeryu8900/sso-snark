@@ -93,7 +93,7 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
       await connection.rollback();
     } finally {
       // await connection.query("UNLOCK TABLES");
-      session.nonce = utils.generateNonce();
+      session.nonce = utils.randomBigUint64();
       connection.release();
     }
   });
@@ -169,7 +169,7 @@ const vKey = JSON.parse(fs.readFileSync("../verification_key.json").toString());
               : ""));
       await connection.rollback();
     } finally {
-      session.nonce = utils.generateNonce();
+      session.nonce = utils.randomBigUint64();
       connection.release();
     }
   });

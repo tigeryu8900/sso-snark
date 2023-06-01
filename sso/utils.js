@@ -3,7 +3,7 @@ const randomWords = require("random-words");
 const pool = require("./pool");
 
 module.exports = {
-  generateNonce() {
+  randomBigUint64() {
     return crypto.getRandomValues(new BigUint64Array(1))[0].toString();
   },
   async addUser(username, output, nonce, connection = pool) {

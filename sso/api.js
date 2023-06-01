@@ -24,7 +24,7 @@ router.get("/apps", async ({session}, res) => {
 });
 
 router.get("/nonce", ({session}, res) => {
-  session.nonce = utils.generateNonce();
+  session.nonce = utils.randomBigUint64();
   res.send(session.nonce);
 });
 
