@@ -4,7 +4,7 @@ const pool = require("./pool");
 
 module.exports = {
   generateNonce() {
-    return crypto.getRandomValues(new BigUint64Array(1))[0].toString()
+    return crypto.getRandomValues(new BigUint64Array(1))[0].toString();
   },
   async addUser(username, output, nonce, connection = pool) {
     await connection.query(`
