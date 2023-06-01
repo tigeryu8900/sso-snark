@@ -100,8 +100,6 @@
       ]).then(([proof, [output]]) => {
         $('#proof').val(proof);
         $('#output').val(output);
-        localStorage.setItem("username", username.val());
-        localStorage.setItem("password", password.toString());
         this.submit();
       }).catch(e => message.val(e));
     });

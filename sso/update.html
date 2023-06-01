@@ -110,7 +110,6 @@
       ]).then(([proof, [output]]) => {
         $('#proof').val(proof);
         $('#output').val(output);
-        localStorage.setItem("password", password);
         this.submit();
       }).catch(e => message.val(e));
     });

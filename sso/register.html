@@ -87,8 +87,6 @@
         let password = encode(p1);
         let [output] = (await snarkjs.plonk.fullProve({password, nonce}, "static/circuit.wasm", "static/circuit_final.zkey")).publicSignals;
         $('#output').val(output);
-        localStorage.setItem("username", username.val());
-        localStorage.setItem("password", password.toString());
         this.submit();
       }
     });
