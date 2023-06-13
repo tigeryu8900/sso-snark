@@ -118,21 +118,30 @@ Finally, the app server uses the given query parameters to authenticate the user
 
 I considered these vulnerabilities and addressed them in my implementation:
 
-- Since zk-SNARK proofs don't hold information about when it is generated or whether it has been
-verified before, so I used a nonce that updates every time someone signs in to prevent replay
-attacks.
-- Passwords are never sent over the network, so passwords can't be intercepted.
-- For the SSO server, a user-dependent catchphrase is displayed upon sign in, so users can tell that
-they are signed in to the correct SSO server. Since this is user-dependent, it is hard to create a
-fake SSO server.
-- The SSO server does not store the proof or the password for signing in to the SSO server. In fact,
-all information used to authenticate users to the SSO server can be queried from the server without
-signing in. If someone has read access to the database for the SSO server, they still won't be able
-to sign in to the SSO server. The credentials for signing in to other apps however, is a different
-story.
-- The SSO server uses user- and app-dependent one-time passwords that updates every time an app is
-authenticated, so if a one-time password is ever leaked, it won't be valid if the user authenticates
-an app.
-- If the list of one-time passwords ever gets leaked, the SSO server could iterate through them and
-regenerate them so that the leaked list of one-time passwords becomes useless. This is not
-implemented yet.
+- We are assuming that the attacker
+  - can sniff traffic.
+  - has read access to app database.
+  - might temporarily have read access to SSO database.
+  - does not have write access to app or SSO databases.
+  - has compromised an app.
+- Scenarios
+  - The attacker tries to replay a captured request to sign in to either the app or SSO server.
+    - Since the nonce changes with every sign in, the nonce would be invalid.
+  - The attacker creates a fake SSO server to capture user credentials.
+    - The user-dependent catchphrase would be incorrect, and the user could tell that the server is
+      fake.
+  - The attacker tries to sign in to an app.
+    - The app database does not store the credentials for authenticating the app, so reading the
+      app's database is useless in this case.
+    - If the attacker was able to read the SSO server's database and then lost access to it, we can
+      update all the one-time passwords stored on the SSO server by querying each app server. This
+      isn't implemented yet.
+  - The attacker tries to sign in to the SSO server after gaining access to the SSO database
+    - The SSO database does not store credentials for signing in to the SSO server, so reading the
+      SSO database is useless in this case.
+  - The attacker tries to sign in another app after compromising an app
+    - Credentials for apps are user- and app- dependent, so the credentials for the compromised app
+      cannot be used to compromise other apps.
+  - The attacker tries to sign in to the SSO server after compromising an app
+    - Credentials for apps are different for credentials for the SSO server, so the credentials for
+      the compromised app cannot be used to compromise the SSO server.
